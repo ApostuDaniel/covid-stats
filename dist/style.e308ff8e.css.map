@@ -1,0 +1,1 @@
+{"version":3,"sources":["style.css"],"names":[],"mappings":"AAAA;EACE,uBAAuB;AACzB;;AAEA;EACE,iCAAiC;AACnC","file":"style.e308ff8e.css","sourceRoot":"..\\src","sourcesContent":[".outline {\r\n  outline: 2px solid #ccc;\r\n}\r\n\r\nbody {\r\n  font-family: 'Roboto', sans-serif;\r\n}\r\n"]}
