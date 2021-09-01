@@ -5,7 +5,11 @@ import {
   getTestingData,
   getVaccinationsData,
   getVariantsData,
+  isDataPresent,
 } from './canvas-manipulation.js';
+import { covidData } from './commons';
+
+import { getJSON } from './data-procesing';
 
 function populateDataList(countryData) {
   const datalist = document.querySelector('#countries');
@@ -40,7 +44,43 @@ function attachContent(element, parent) {
   }
 }
 
-async function getInfo(countryCode) {
+async function populateMainHeader(countryCode, headerName) {
+  await isDataPresent('general');
+  const jsonData = covidData.general[countryCode];
+
+  const header = document.createElement('header');
+  header.id = 'main-content-header';
+  const h = document.createElement('h1');
+  const countryID = document.createElement('span');
+  countryID.id = 'country-id';
+  const name = document.createElement('p');
+  const continent = document.createElement('p');
+  const flag = document.createElement('img');
+
+  h.textContent = headerName;
+  name.textContent = jsonData['location'];
+  continent.textContent = jsonData['continent'];
+
+  let iso2 = await getJSON(
+    `https://api.worldbank.org/v2/country/${countryCode.toLowerCase()}?format=json`
+  );
+
+  flag.src = `https://flagcdn.com/h40/${iso2[1][0][
+    'iso2Code'
+  ].toLowerCase()}.png`;
+  flag.id = 'flag';
+  flag.alt = `The flag of ${jsonData['location']}`;
+
+  countryID.appendChild(name);
+  countryID.appendChild(flag);
+  countryID.appendChild(continent);
+  header.appendChild(h);
+  header.appendChild(countryID);
+
+  return header;
+}
+
+async function populateMain(countryCode) {
   const mainContent = document.querySelector('#main-content-area');
   const currentSection = mainContent.getAttribute('data-current-section');
   let content;
@@ -71,7 +111,12 @@ async function getInfo(countryCode) {
     default:
       console.log('Invalid section', currentSection);
   }
+  let sectionName = `${currentSection
+    .charAt(0)
+    .toUpperCase()}${currentSection.slice(1)}`;
+  const header = await populateMainHeader(countryCode, sectionName);
+  mainContent.appendChild(header);
   attachContent(content, mainContent);
 }
 
-export { getInfo, populateDataList };
+export { populateMain, populateDataList };

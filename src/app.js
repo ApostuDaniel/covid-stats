@@ -1,5 +1,5 @@
 import { getLocation } from './modules/location.js';
-import { getInfo, populateDataList } from './modules/dom-manipulation.js';
+import { populateMain, populateDataList } from './modules/dom-manipulation.js';
 import { countryList } from './modules/data-procesing.js';
 import { isDataPresent } from './modules/canvas-manipulation.js';
 
@@ -18,14 +18,14 @@ navSections.forEach((section) => {
   section.addEventListener('click', async () => {
     mainContent.setAttribute('data-current-section', section.id);
     if (input.value) {
-      await getInfo(input.getAttribute('data-iso'));
+      await populateMain(input.getAttribute('data-iso'));
     }
   });
 });
 
 getInfoButton.addEventListener('click', async () => {
   if (input.value) {
-    await getInfo(input.getAttribute('data-iso'));
+    await populateMain(input.getAttribute('data-iso'));
   }
 });
 
@@ -33,7 +33,7 @@ currentLocationButton.addEventListener('click', async () => {
   const location = await getLocation();
   input.value = location[1];
   input.setAttribute('data-iso', location[0]);
-  await getInfo(input.getAttribute('data-iso'));
+  await populateMain(input.getAttribute('data-iso'));
 });
 
 window.onload = async () => {

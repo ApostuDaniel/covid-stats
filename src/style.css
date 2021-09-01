@@ -5,3 +5,12 @@
 body {
   font-family: 'Roboto', sans-serif;
 }
+
+#country-id {
+  display: flex;
+  justify-content: space-evenly;
+  width: 50%;
+}
+
+#country-map-icon {
+}

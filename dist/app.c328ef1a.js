@@ -119294,6 +119294,8 @@ var _dataProcesing = require("./data-procesing");
 
 var _commons = require("./commons");
 
+const API_KEY = 'zMJpTq2kJPv6NHOFDyPpgUoOpMgOsBOerfYHAefz';
+
 async function isDataPresent(type) {
   switch (type) {
     case 'general':
@@ -119330,9 +119332,37 @@ async function isDataPresent(type) {
 }
 
 async function getOverviewData(countryCode) {
-  const para = document.createElement('p');
-  para.textContent = `The country code for overview is ${countryCode}, link is ${_commons.dataURLs.overview}`;
-  return para;
+  await isDataPresent('general');
+  const jsonData = _commons.covidData.general[countryCode];
+  const info = document.createElement('div');
+  info.id = 'main-info';
+  console.log(jsonData);
+  const searchTerm = jsonData['location'].toLowerCase().replace(' ', '-') + '-map';
+  const iconInfo = await (0, _dataProcesing.getJSON)(`https://search.icons8.com/api/iconsets/v5/search?term=${searchTerm}&token=${API_KEY}&amount=1`);
+  const icon = await (0, _dataProcesing.getJSON)(`https://api-icons.icons8.com/publicApi/icons/icon?id=${iconInfo['icons'][0]['id']}&token=${API_KEY}`);
+  console.log(icon);
+
+  if (icon && icon['icon']['category'] === 'maps') {
+    const countryMap = document.createElement('div');
+    countryMap.innerHTML = icon['icon']['svg'];
+    countryMap.id = 'country-map-icon';
+    info.appendChild(countryMap);
+  }
+
+  const infoSkeleton = {
+    textContent: ['Population', 'Population density', 'Median age', 'GDP per capita', 'Aged 65 or older', 'Aged 70 or older', 'Male smokers', 'Female smokers', 'Diabetes prevalence', 'Cardiovascular death rate', 'Extreme poverty', 'Human Development Index', 'Life expectancy', 'Hospital beds per a thousand people'],
+    dataKey: ['population', 'population_density', 'median_age', 'gdp_per_capita', 'aged_65_older', 'aged_70_older', 'male-smokers', 'female-smokers', 'diabetes_prevalence', 'cardiovasc_death_rate', 'extreme-poverty', 'human_development_index', 'life_expectancy', 'hospital_beds_per_thousand'],
+    unit: ['', 'people per km²', 'years', '$', '%', '%', '% of males', '% of females', '% of population (aged 20 to 79)', 'deaths per 100,000 people', 'share of population', '', 'years', '']
+  };
+  infoSkeleton.dataKey.forEach((key, index) => {
+    if (jsonData[key]) {
+      const para = document.createElement('p');
+      para.id = key;
+      para.textContent = `${infoSkeleton.textContent[index]}: ${jsonData[key]} ${infoSkeleton.unit[index]}`;
+      info.appendChild(para);
+    }
+  });
+  return info;
 }
 
 async function getTestingData(countryCode) {
@@ -119370,10 +119400,14 @@ async function getVariantsData(countryCode) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.getInfo = getInfo;
+exports.populateMain = populateMain;
 exports.populateDataList = populateDataList;
 
 var _canvasManipulation = require("./canvas-manipulation.js");
+
+var _commons = require("./commons");
+
+var _dataProcesing = require("./data-procesing");
 
 function populateDataList(countryData) {
   const datalist = document.querySelector('#countries');
@@ -119407,7 +119441,33 @@ function attachContent(element, parent) {
   }
 }
 
-async function getInfo(countryCode) {
+async function populateMainHeader(countryCode, headerName) {
+  await (0, _canvasManipulation.isDataPresent)('general');
+  const jsonData = _commons.covidData.general[countryCode];
+  const header = document.createElement('header');
+  header.id = 'main-content-header';
+  const h = document.createElement('h1');
+  const countryID = document.createElement('span');
+  countryID.id = 'country-id';
+  const name = document.createElement('p');
+  const continent = document.createElement('p');
+  const flag = document.createElement('img');
+  h.textContent = headerName;
+  name.textContent = jsonData['location'];
+  continent.textContent = jsonData['continent'];
+  let iso2 = await (0, _dataProcesing.getJSON)(`https://api.worldbank.org/v2/country/${countryCode.toLowerCase()}?format=json`);
+  flag.src = `https://flagcdn.com/h40/${iso2[1][0]['iso2Code'].toLowerCase()}.png`;
+  flag.id = 'flag';
+  flag.alt = `The flag of ${jsonData['location']}`;
+  countryID.appendChild(name);
+  countryID.appendChild(flag);
+  countryID.appendChild(continent);
+  header.appendChild(h);
+  header.appendChild(countryID);
+  return header;
+}
+
+async function populateMain(countryCode) {
   const mainContent = document.querySelector('#main-content-area');
   const currentSection = mainContent.getAttribute('data-current-section');
   let content;
@@ -119445,9 +119505,12 @@ async function getInfo(countryCode) {
       console.log('Invalid section', currentSection);
   }
 
+  let sectionName = `${currentSection.charAt(0).toUpperCase()}${currentSection.slice(1)}`;
+  const header = await populateMainHeader(countryCode, sectionName);
+  mainContent.appendChild(header);
   attachContent(content, mainContent);
 }
-},{"./canvas-manipulation.js":"modules/canvas-manipulation.js"}],"app.js":[function(require,module,exports) {
+},{"./canvas-manipulation.js":"modules/canvas-manipulation.js","./commons":"modules/commons.js","./data-procesing":"modules/data-procesing.js"}],"app.js":[function(require,module,exports) {
 "use strict";
 
 var _location = require("./modules/location.js");
@@ -119474,20 +119537,20 @@ navSections.forEach(section => {
     mainContent.setAttribute('data-current-section', section.id);
 
     if (input.value) {
-      await (0, _domManipulation.getInfo)(input.getAttribute('data-iso'));
+      await (0, _domManipulation.populateMain)(input.getAttribute('data-iso'));
     }
   });
 });
 getInfoButton.addEventListener('click', async () => {
   if (input.value) {
-    await (0, _domManipulation.getInfo)(input.getAttribute('data-iso'));
+    await (0, _domManipulation.populateMain)(input.getAttribute('data-iso'));
   }
 });
 currentLocationButton.addEventListener('click', async () => {
   const location = await (0, _location.getLocation)();
   input.value = location[1];
   input.setAttribute('data-iso', location[0]);
-  await (0, _domManipulation.getInfo)(input.getAttribute('data-iso'));
+  await (0, _domManipulation.populateMain)(input.getAttribute('data-iso'));
 });
 
 window.onload = async () => {
@@ -119525,7 +119588,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60378" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61218" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
