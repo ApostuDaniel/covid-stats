@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx parcel ./src/index.html"
   },
   "keywords": [],
   "author": "Apostu Daniel",
@@ -19,6 +20,7 @@
     "prettier": "^2.3.2"
   },
   "dependencies": {
+    "chart.js": "^3.5.1",
     "core-js": "^3.16.2",
     "csvtojson": "^2.0.10",
     "regenerator-runtime": "^0.13.9"
