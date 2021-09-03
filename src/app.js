@@ -42,4 +42,6 @@ window.onload = async () => {
   populateDataList(locationsList);
   input.setAttribute('placeholder', 'Type here...');
   input.disabled = false;
+  getInfoButton.disabled = false;
+  currentLocationButton.disabled = false;
 };

@@ -119223,14 +119223,16 @@ const dataURLs = {
   confirmed: 'https://covid.ourworldindata.org/data/owid-covid-data.json',
   vaccinations: 'https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json',
   mortality: 'https://covid.ourworldindata.org/data/owid-covid-data.json',
-  variants: 'https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/variants/covid-variants.csv'
+  variants: 'https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/variants/covid-variants.csv',
+  locations: 'https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/locations.csv'
 };
 exports.dataURLs = dataURLs;
 const covidData = {
   general: null,
   testing: null,
   vaccinations: null,
-  variants: null
+  variants: null,
+  locations: null
 };
 exports.covidData = covidData;
 },{}],"modules/data-procesing.js":[function(require,module,exports) {
@@ -136537,6 +136539,13 @@ async function isDataPresent(type) {
 
       break;
 
+    case 'locations':
+      if (!_commons.covidData.locations) {
+        _commons.covidData.locations = await (0, _dataProcesing.csvtojson)(_commons.dataURLs.locations);
+      }
+
+      break;
+
     default:
       console.log('Invalid type', type);
   }
@@ -137060,7 +137069,9 @@ async function getConfirmedData(countryCode) {
 
 async function getVaccinationsData(countryCode) {
   await isDataPresent('vaccinations');
+  await isDataPresent('locations');
   let vaccineData = null;
+  let locationData = null;
 
   for (let i = 0; i < _commons.covidData['vaccinations'].length; ++i) {
     if (_commons.covidData['vaccinations'][i]['iso_code'] === countryCode) {
@@ -137069,8 +137080,194 @@ async function getVaccinationsData(countryCode) {
     }
   }
 
+  for (let elem of _commons.covidData['locations']) {
+    if (elem['iso_code'] === countryCode) {
+      locationData = elem;
+      break;
+    }
+  }
+
   if (!vaccineData) return null;
+  const chartsWrapper = document.createElement('div');
+  chartsWrapper.id = 'charts-wrapper';
+  const vaccineSkeleton = new ChartsSkeleton(['total_vaccinations', 'daily_vaccinations'], 400, 400);
+  const totalData = {
+    labels: [],
+    vaccinations: [],
+    peopleVaccinatedOnce: [],
+    peopleFullyVaccinated: []
+  };
+  const dailyData = {
+    data: [],
+    labels: []
+  };
+  vaccineData.forEach(dailyReport => {
+    if (dailyReport['daily_vaccinations']) {
+      dailyData['data'].push(dailyReport['daily_vaccinations']);
+      dailyData['labels'].push(createDateLabel(dailyReport['date']));
+    }
+
+    if (dailyReport['total_vaccinations']) {
+      if (!(dailyReport['people_vaccinated'] || dailyReport['people_fully_vaccinated'])) {
+        return;
+      }
+
+      totalData['vaccinations'].push(dailyReport['total_vaccinations']);
+      totalData['labels'].push(createDateLabel(dailyReport['date']));
+      dailyReport['people_fully_vaccinated'] ? totalData['peopleFullyVaccinated'].push(dailyReport['people_fully_vaccinated']) : totalData['peopleFullyVaccinated'].push(0);
+      dailyReport['people_vaccinated'] ? totalData['peopleVaccinatedOnce'].push(dailyReport['people_vaccinated']) : totalData['peopleVaccinatedOnce'].push(dailyReport['total_vaccinations'] - dailyReport['people_fully_vaccinated'] / 2);
+    }
+  });
   console.log(vaccineData);
+  const chartTotal = new _auto.default(vaccineSkeleton['ctx'][0], {
+    type: 'line',
+    data: {
+      labels: totalData['labels'],
+      datasets: [{
+        label: 'Total Vaccines administered',
+        data: totalData['vaccinations'],
+        borderColor: 'rgba(38, 73, 154, 0.9)',
+        backgroundColor: 'rgba(118, 208, 232, 0.8)',
+        fill: {
+          target: 1,
+          above: 'rgba(118, 208, 232, 0.5)'
+        },
+        cubicInterpolationMode: 'monotone',
+        pointRadius: 2
+      }, {
+        label: 'People that received at least one vaccine dose',
+        data: totalData['peopleVaccinatedOnce'],
+        borderColor: 'rgba(171, 5, 1, 0.9)',
+        backgroundColor: 'rgba(247, 0, 0, 0.8)',
+        fill: {
+          target: 2,
+          above: 'rgba(247, 0, 0, 0.5)'
+        },
+        cubicInterpolationMode: 'monotone',
+        pointRadius: 2
+      }, {
+        label: 'People fully vaccinated',
+        data: totalData['peopleFullyVaccinated'],
+        borderColor: 'rgba(98, 175, 68, 0.9)',
+        backgroundColor: 'rgba(81, 233, 0, 0.8)',
+        fill: {
+          target: 'origin',
+          above: 'rgba(81, 233, 0, 0.5)'
+        },
+        cubicInterpolationMode: 'monotone',
+        pointRadius: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Vaccinations per total'
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb'
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        }
+      }
+    }
+  });
+  const chartDaily = new _auto.default(vaccineSkeleton['ctx'][1], {
+    type: 'bar',
+    data: {
+      labels: dailyData['labels'],
+      datasets: [{
+        label: 'Daily Vaccinations',
+        data: dailyData['data']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Daily Vaccinations(7-day smoothed)'
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb'
+        },
+        legend: {
+          display: false
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Vaccinations'
+          }
+        }
+      },
+      datasets: {
+        bar: {
+          borderColor: context => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return 'rgba(98, 175, 68, 0.9)';else {
+              return value >= context.dataset.data[index - 1] ? 'rgba(98, 175, 68, 0.9)' : 'rgba(171, 5, 1, 0.9)';
+            }
+          },
+          backgroundColor: context => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return 'rgba(81, 233, 0, 0.8)';else {
+              return value >= context.dataset.data[index - 1] ? 'rgba(81, 233, 0, 0.8)' : 'rgba(247, 0, 0, 0.8)';
+            }
+          }
+        }
+      }
+    }
+  });
+  const vaccineTypes = locationData['vaccines'].split(', ');
+  const vaccinesDiv = document.createElement('div');
+  vaccinesDiv.id = 'vaccine-types';
+  const para = document.createElement('p');
+  para.textContent = `Vaccines administered:`;
+  vaccinesDiv.appendChild(para);
+  const ul = document.createElement('ul');
+  vaccinesDiv.appendChild(ul);
+  vaccineTypes.forEach(vaccine => {
+    const li = document.createElement('li');
+    li.textContent = vaccine;
+    ul.appendChild(li);
+  });
+  chartsWrapper.appendChild(vaccinesDiv);
+  vaccineSkeleton['div'].forEach(div => {
+    chartsWrapper.appendChild(div);
+  });
+  chartsWrapper.appendChild(createInfoSource(locationData['last_observation_date'], locationData['source_website'], locationData['source_name']));
+  return chartsWrapper;
 }
 
 async function getMortalityData(countryCode) {
@@ -137249,6 +137446,8 @@ window.onload = async () => {
   (0, _domManipulation.populateDataList)(locationsList);
   input.setAttribute('placeholder', 'Type here...');
   input.disabled = false;
+  getInfoButton.disabled = false;
+  currentLocationButton.disabled = false;
 };
 },{"./modules/location.js":"modules/location.js","./modules/dom-manipulation.js":"modules/dom-manipulation.js","./modules/data-procesing.js":"modules/data-procesing.js","./modules/canvas-manipulation.js":"modules/canvas-manipulation.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -137278,7 +137477,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56787" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52712" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
