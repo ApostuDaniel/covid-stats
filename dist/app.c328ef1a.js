@@ -119278,7 +119278,87 @@ async function countryList() {
   });
   return result;
 }
-},{"csvtojson/v2":"../node_modules/csvtojson/v2/index.js","request":"../node_modules/request/index.js","./commons":"modules/commons.js"}],"../node_modules/chart.js/dist/chunks/helpers.segment.js":[function(require,module,exports) {
+},{"csvtojson/v2":"../node_modules/csvtojson/v2/index.js","request":"../node_modules/request/index.js","./commons":"modules/commons.js"}],"modules/utility.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.shadeColor = shadeColor;
+exports.createDateLabel = createDateLabel;
+exports.createInfoSource = createInfoSource;
+exports.getRandomInt = getRandomInt;
+exports.ChartsSkeleton = void 0;
+
+//Used for ligthening/darkening colors
+function shadeColor(color, percent) {
+  var R = parseInt(color.substring(1, 3), 16);
+  var G = parseInt(color.substring(3, 5), 16);
+  var B = parseInt(color.substring(5, 7), 16);
+  R = parseInt(R * (100 + percent) / 100);
+  G = parseInt(G * (100 + percent) / 100);
+  B = parseInt(B * (100 + percent) / 100);
+  R = R < 255 ? R : 255;
+  G = G < 255 ? G : 255;
+  B = B < 255 ? B : 255;
+  var RR = R.toString(16).length == 1 ? '0' + R.toString(16) : R.toString(16);
+  var GG = G.toString(16).length == 1 ? '0' + G.toString(16) : G.toString(16);
+  var BB = B.toString(16).length == 1 ? '0' + B.toString(16) : B.toString(16);
+  return '#' + RR + GG + BB;
+}
+
+class ChartsSkeleton {
+  constructor(chartIDArray, canvasWidth, canvasHeight) {
+    this.chartsID = [...chartIDArray];
+    this.div = [];
+    this.canvas = [];
+    this.ctx = [];
+    this.chartsID.forEach(chartID => {
+      const newDiv = document.createElement('div');
+      const newCanvas = document.createElement('canvas');
+      newCanvas.id = chartID;
+      newCanvas.width = canvasWidth;
+      newCanvas.height = canvasHeight;
+      newDiv.id = `${chartID}-div`;
+      newDiv.style.position = 'relative';
+      newDiv.appendChild(newCanvas);
+      const newCtx = newCanvas.getContext('2d');
+      this.div.push(newDiv);
+      this.canvas.push(newCanvas);
+      this.ctx.push(newCtx);
+    });
+  }
+
+}
+
+exports.ChartsSkeleton = ChartsSkeleton;
+
+function createDateLabel(date) {
+  let day = new Date(date);
+  return day.toDateString().slice(4);
+}
+
+function createInfoSource(lastObservationDate, sourceURL, sourceLabel) {
+  const source = document.createElement('div');
+  source.classList.add('source');
+  const para = document.createElement('p');
+  const a = document.createElement('a');
+  let textContent = new Date(lastObservationDate).toDateString();
+  para.textContent = `Last observation date: ${textContent}`;
+  a.textContent = `Source: ${sourceLabel}`;
+  a.href = sourceURL;
+  a.target = '_blank';
+  source.appendChild(para);
+  source.appendChild(a);
+  return source;
+}
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+}
+},{}],"../node_modules/chart.js/dist/chunks/helpers.segment.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -136503,6 +136583,8 @@ var _dataProcesing = require("./data-procesing");
 
 var _commons = require("./commons");
 
+var _utility = require("./utility");
+
 var _auto = _interopRequireDefault(require("chart.js/auto"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -136554,9 +136636,9 @@ async function isDataPresent(type) {
 async function getOverviewData(countryCode) {
   await isDataPresent('general');
   const data = _commons.covidData.general[countryCode];
+  console.log(data);
   const info = document.createElement('div');
-  info.id = 'main-info';
-  console.log(data); // const searchTerm =
+  info.id = 'main-info'; // const searchTerm =
   //   jsonData['location'].toLowerCase().replace(' ', '-') + '-map';
   // const iconInfo = await getJSON(
   //   `https://search.icons8.com/api/iconsets/v5/search?term=${searchTerm}&token=${API_KEY}&amount=1`
@@ -136588,50 +136670,6 @@ async function getOverviewData(countryCode) {
   return info;
 }
 
-class ChartsSkeleton {
-  constructor(chartIDArray, canvasWidth, canvasHeight) {
-    this.chartsID = [...chartIDArray];
-    this.div = [];
-    this.canvas = [];
-    this.ctx = [];
-    this.chartsID.forEach(chartID => {
-      const newDiv = document.createElement('div');
-      const newCanvas = document.createElement('canvas');
-      newCanvas.id = chartID;
-      newCanvas.width = canvasWidth;
-      newCanvas.height = canvasHeight;
-      newDiv.id = `${chartID}-div`;
-      newDiv.style.position = 'relative';
-      newDiv.appendChild(newCanvas);
-      const newCtx = newCanvas.getContext('2d');
-      this.div.push(newDiv);
-      this.canvas.push(newCanvas);
-      this.ctx.push(newCtx);
-    });
-  }
-
-}
-
-function createDateLabel(date) {
-  let day = new Date(date);
-  return day.toDateString().slice(3);
-}
-
-function createInfoSource(lastObservationDate, sourceURL, sourceLabel) {
-  const source = document.createElement('div');
-  source.classList.add('source');
-  const para = document.createElement('p');
-  const a = document.createElement('a');
-  let textContent = new Date(lastObservationDate).toDateString();
-  para.textContent = `Last observation date: ${textContent}`;
-  a.textContent = `Source: ${sourceLabel}`;
-  a.href = sourceURL;
-  a.target = '_blank';
-  source.appendChild(para);
-  source.appendChild(a);
-  return source;
-}
-
 async function getTestingData(countryCode) {
   await isDataPresent('testing');
 
@@ -136643,7 +136681,7 @@ async function getTestingData(countryCode) {
   console.log(testingData);
   const chartsWrapper = document.createElement('div');
   chartsWrapper.id = 'charts-wrapper';
-  const testingSkeleton = new ChartsSkeleton(['cumulative-tests', 'daily-change', 'per-thousand', 'per-case'], 400, 400);
+  const testingSkeleton = new _utility.ChartsSkeleton(['cumulative-tests', 'daily-change', 'per-thousand', 'per-case'], 400, 400);
   const data_cumulative_tests = {
     data: [],
     labels: []
@@ -136662,22 +136700,22 @@ async function getTestingData(countryCode) {
   };
   testingData.forEach(dailyReport => {
     if (dailyReport['Cumulative total'] !== '') {
-      data_cumulative_tests['labels'].push(createDateLabel(dailyReport['Date']));
+      data_cumulative_tests['labels'].push((0, _utility.createDateLabel)(dailyReport['Date']));
       data_cumulative_tests['data'].push(dailyReport['Cumulative total']);
     }
 
     if (dailyReport['Cumulative total per thousand'] !== '') {
-      data_per_thousand['labels'].push(createDateLabel(dailyReport['Date']));
+      data_per_thousand['labels'].push((0, _utility.createDateLabel)(dailyReport['Date']));
       data_per_thousand['data'].push(dailyReport['Cumulative total per thousand']);
     }
 
     if (dailyReport['7-day smoothed daily change'] !== '') {
-      data_daily_change['labels'].push(createDateLabel(dailyReport['Date']));
+      data_daily_change['labels'].push((0, _utility.createDateLabel)(dailyReport['Date']));
       data_daily_change['data'].push(dailyReport['7-day smoothed daily change']);
     }
 
     if (dailyReport['Short-term tests per case'] !== '') {
-      data_per_case['labels'].push(createDateLabel(dailyReport['Date']));
+      data_per_case['labels'].push((0, _utility.createDateLabel)(dailyReport['Date']));
       data_per_case['data'].push(dailyReport['Short-term tests per case']);
     }
   });
@@ -136692,7 +136730,7 @@ async function getTestingData(countryCode) {
         backgroundColor: 'rgba(135, 206, 250, 0.8)',
         fill: {
           target: 'origin',
-          below: 'rgba(135, 206, 250, 0.8)'
+          above: 'rgba(135, 206, 250, 0.5)'
         },
         cubicInterpolationMode: 'monotone',
         pointRadius: 2
@@ -136807,7 +136845,7 @@ async function getTestingData(countryCode) {
         backgroundColor: 'rgba(135, 206, 250, 0.8)',
         fill: {
           target: 'origin',
-          below: 'rgba(135, 206, 250, 0.8)'
+          above: 'rgba(135, 206, 250, 0.5)'
         },
         cubicInterpolationMode: 'monotone',
         pointRadius: 2
@@ -136914,7 +136952,7 @@ async function getTestingData(countryCode) {
   testingSkeleton['div'].forEach(div => {
     chartsWrapper.appendChild(div);
   });
-  const source = createInfoSource(testingData[testingData.length - 1]['Date'], testingData[testingData.length - 1]['Source URL'], testingData[testingData.length - 1]['Source label']);
+  const source = (0, _utility.createInfoSource)(testingData[testingData.length - 1]['Date'], testingData[testingData.length - 1]['Source URL'], testingData[testingData.length - 1]['Source label']);
   chartsWrapper.appendChild(source);
   return chartsWrapper;
 }
@@ -136926,7 +136964,7 @@ async function getConfirmedData(countryCode) {
   console.log(confirmedData);
   const chartsWrapper = document.createElement('div');
   chartsWrapper.id = 'charts-wrapper';
-  const confirmedSkeleton = new ChartsSkeleton(['new_cases', 'total_cases'], 400, 400);
+  const confirmedSkeleton = new _utility.ChartsSkeleton(['new_cases', 'total_cases'], 400, 400);
   const new_casesData = {
     data: [],
     labels: []
@@ -136938,12 +136976,12 @@ async function getConfirmedData(countryCode) {
   confirmedData.forEach(dailyReport => {
     if (dailyReport['new_cases'] !== '') {
       new_casesData['data'].push(dailyReport['new_cases']);
-      new_casesData['labels'].push(createDateLabel(dailyReport['date']));
+      new_casesData['labels'].push((0, _utility.createDateLabel)(dailyReport['date']));
     }
 
     if (dailyReport['total_cases'] !== '') {
       total_casesData['data'].push(dailyReport['total_cases']);
-      total_casesData['labels'].push(createDateLabel(dailyReport['date']));
+      total_casesData['labels'].push((0, _utility.createDateLabel)(dailyReport['date']));
     }
   });
   const newChart = new _auto.default(confirmedSkeleton['ctx'][0], {
@@ -137021,7 +137059,7 @@ async function getConfirmedData(countryCode) {
         backgroundColor: 'rgba(247, 0, 0, 0.8)',
         fill: {
           target: 'origin',
-          below: 'rgba(247, 0, 0, 0.8)'
+          above: 'rgba(247, 0, 0, 0.5)'
         },
         cubicInterpolationMode: 'monotone',
         pointRadius: 2
@@ -137090,7 +137128,7 @@ async function getVaccinationsData(countryCode) {
   if (!vaccineData) return null;
   const chartsWrapper = document.createElement('div');
   chartsWrapper.id = 'charts-wrapper';
-  const vaccineSkeleton = new ChartsSkeleton(['total_vaccinations', 'daily_vaccinations'], 400, 400);
+  const vaccineSkeleton = new _utility.ChartsSkeleton(['total_vaccinations', 'daily_vaccinations'], 400, 400);
   const totalData = {
     labels: [],
     vaccinations: [],
@@ -137104,7 +137142,7 @@ async function getVaccinationsData(countryCode) {
   vaccineData.forEach(dailyReport => {
     if (dailyReport['daily_vaccinations']) {
       dailyData['data'].push(dailyReport['daily_vaccinations']);
-      dailyData['labels'].push(createDateLabel(dailyReport['date']));
+      dailyData['labels'].push((0, _utility.createDateLabel)(dailyReport['date']));
     }
 
     if (dailyReport['total_vaccinations']) {
@@ -137113,7 +137151,7 @@ async function getVaccinationsData(countryCode) {
       }
 
       totalData['vaccinations'].push(dailyReport['total_vaccinations']);
-      totalData['labels'].push(createDateLabel(dailyReport['date']));
+      totalData['labels'].push((0, _utility.createDateLabel)(dailyReport['date']));
       dailyReport['people_fully_vaccinated'] ? totalData['peopleFullyVaccinated'].push(dailyReport['people_fully_vaccinated']) : totalData['peopleFullyVaccinated'].push(0);
       dailyReport['people_vaccinated'] ? totalData['peopleVaccinatedOnce'].push(dailyReport['people_vaccinated']) : totalData['peopleVaccinatedOnce'].push(dailyReport['total_vaccinations'] - dailyReport['people_fully_vaccinated'] / 2);
     }
@@ -137266,22 +137304,389 @@ async function getVaccinationsData(countryCode) {
   vaccineSkeleton['div'].forEach(div => {
     chartsWrapper.appendChild(div);
   });
-  chartsWrapper.appendChild(createInfoSource(locationData['last_observation_date'], locationData['source_website'], locationData['source_name']));
+  chartsWrapper.appendChild((0, _utility.createInfoSource)(locationData['last_observation_date'], locationData['source_website'], locationData['source_name']));
   return chartsWrapper;
 }
 
 async function getMortalityData(countryCode) {
-  const para = document.createElement('p');
-  para.textContent = `The country code for mortality is ${countryCode}, ${_commons.dataURLs.mortality}`;
-  return para;
+  await isDataPresent('general');
+  const mortalityData = _commons.covidData.general[countryCode]['data'];
+  if (mortalityData.length == 0) return null;
+  const chartsWrapper = document.createElement('div');
+  chartsWrapper.id = 'charts-wrapper';
+  const mortalitySkeleton = new _utility.ChartsSkeleton(['new_deaths_smoothed', 'total_deaths'], 400, 400);
+  const new_deathsData = {
+    data: [],
+    labels: []
+  };
+  const total_deathsData = {
+    data: [],
+    labels: []
+  };
+  mortalityData.forEach(dailyReport => {
+    if (dailyReport['new_deaths_smoothed'] !== '') {
+      new_deathsData['data'].push(dailyReport['new_deaths_smoothed']);
+      new_deathsData['labels'].push((0, _utility.createDateLabel)(dailyReport['date']));
+    }
+
+    if (dailyReport['total_deaths'] !== '') {
+      total_deathsData['data'].push(dailyReport['total_deaths']);
+      total_deathsData['labels'].push((0, _utility.createDateLabel)(dailyReport['date']));
+    }
+  });
+  const newChart = new _auto.default(mortalitySkeleton['ctx'][0], {
+    type: 'bar',
+    data: {
+      labels: new_deathsData['labels'],
+      datasets: [{
+        label: 'New deaths',
+        data: new_deathsData['data']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'New registered deaths attributed to Covid-19(7-day smoothed)'
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb'
+        },
+        legend: {
+          display: false
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Deaths'
+          }
+        }
+      },
+      datasets: {
+        bar: {
+          borderColor: context => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return 'rgba(171, 5, 1, 0.9)';else {
+              return value < context.dataset.data[index - 1] ? 'rgba(98, 175, 68, 0.9)' : 'rgba(171, 5, 1, 0.9)';
+            }
+          },
+          backgroundColor: context => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return 'rgba(247, 0, 0, 0.8)';else {
+              return value < context.dataset.data[index - 1] ? 'rgba(81, 233, 0, 0.8)' : 'rgba(247, 0, 0, 0.8)';
+            }
+          }
+        }
+      }
+    }
+  });
+  const totalChart = new _auto.default(mortalitySkeleton['ctx'][1], {
+    type: 'line',
+    data: {
+      labels: total_deathsData['labels'],
+      datasets: [{
+        label: 'Total deaths',
+        data: total_deathsData['data'],
+        borderColor: 'rgba(171, 12, 12, 0.9)',
+        backgroundColor: 'rgba(25, 25, 25, 0.8)',
+        fill: {
+          target: 'origin',
+          above: 'rgba(25, 25, 25, 0.5)'
+        },
+        cubicInterpolationMode: 'monotone',
+        pointRadius: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Cumulative Total Deaths attributed to Covid-19'
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb'
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Total deaths'
+          }
+        }
+      }
+    }
+  });
+  mortalitySkeleton['div'].forEach(div => {
+    chartsWrapper.appendChild(div);
+  });
+  return chartsWrapper;
 }
 
 async function getVariantsData(countryCode) {
+  await isDataPresent('variants');
+  await isDataPresent('general');
+  const location = _commons.covidData['general'][countryCode]['location'];
+  console.log(location);
+
+  const variantsDataRaw = _commons.covidData['variants'].filter(dailyReport => {
+    return dailyReport['location'] === location;
+  });
+
+  if (variantsDataRaw.length == 0) return null;
+  const chartsWrapper = document.createElement('div');
+  chartsWrapper.id = 'charts-wrapper';
+  console.log(variantsDataRaw);
+  const variantsSkeleton = new _utility.ChartsSkeleton(['total_variants', 'progress_variants'], 400, 400);
+  const parsedData = {
+    date: [],
+    num_sequences_total: [],
+    variants: {}
+  };
+  variantsDataRaw.forEach(dailyReport => {
+    if (dailyReport['variant'] === 'non_who') return;
+    const date = (0, _utility.createDateLabel)(dailyReport['date']);
+
+    if (parsedData['date'].length === 0 || parsedData['date'][parsedData['date'].length - 1] !== date) {
+      parsedData['date'].push(date);
+      parsedData['num_sequences_total'].push(Number(dailyReport['num_sequences_total']));
+    }
+
+    if (!parsedData['variants'][dailyReport['variant']]) {
+      parsedData['variants'][dailyReport['variant']] = {
+        new: [],
+        total: []
+      };
+    }
+
+    parsedData['variants'][dailyReport['variant']]['new'].push(Number(dailyReport['num_sequences']));
+    const variantTotal = parsedData['variants'][dailyReport['variant']]['total'];
+    variantTotal.push(variantTotal.length === 0 ? Number(dailyReport['num_sequences']) : variantTotal[variantTotal.length - 1] + Number(dailyReport['num_sequences']));
+  });
+  const variantDatasets = [];
+  const kelly_colors = ['#F2F3F4', '#222222', '#F3C300', '#875692', '#F38400', '#A1CAF1', '#BE0032', '#C2B280', '#848482', '#8856', '#E68FAC', '#0067A5', '#F99379', '#604E97', '#F6A600', '#B3446C', '#DCD300', '#882D17', '#8DB600', '#654522', '#E25822', '#2B3D26'];
+  Object.keys(parsedData['variants']).forEach((variantName, index) => {
+    const total = parsedData['variants'][variantName]['total'];
+
+    if (total[total.length - 1] === 0) {
+      delete parsedData['variants'][variantName];
+    } else {
+      const darkColor = (0, _utility.shadeColor)(kelly_colors[index], -30);
+      variantDatasets.push({
+        label: variantName,
+        data: total,
+        backgroundColor: kelly_colors[index],
+        borderColor: darkColor
+      });
+    }
+  });
+  console.log(parsedData);
+  const chartTotal = new _auto.default(variantsSkeleton['ctx'][0], {
+    type: 'bar',
+    data: {
+      labels: parsedData['date'],
+      datasets: variantDatasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Total number of cases registered per variant'
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      elements: {
+        bar: {
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date'
+          },
+          stacked: true
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Confirmed Cases'
+          },
+          stacked: true
+        }
+      }
+    }
+  });
+  let index = 0;
+  let interval;
+  const progressState = {
+    state: null,
+    usedColors: [],
+    labels: [],
+    data: [],
+    chart: null,
+    changeState: function (newState) {
+      this.state = newState;
+      this.usedColors = [];
+      this.labels = [];
+      this.data = [];
+      Object.keys(parsedData['variants']).forEach((variantName, variantIndex) => {
+        let value = parsedData['variants'][variantName]['new'][this.state];
+
+        if (value && value > 0) {
+          this.usedColors.push(kelly_colors[variantIndex]);
+          this.labels.push(variantName);
+          this.data.push(value);
+        }
+      });
+
+      if (this.chart) {
+        this.chart.data.labels = this.labels;
+        this.chart.datasets[0].data = this.data;
+        this.chart.datasets[0].backgroundColor = this.usedColors;
+        this.chart.datasets[0].borderColor = this.usedColors.map(color => {
+          return (0, _utility.shadeColor)(color, -30);
+        });
+      } else {
+        this.chart = new _auto.default(variantsSkeleton['ctx'][1], {
+          type: 'pie',
+          data: {
+            labels: this.labels,
+            datasets: [{
+              data: this.data,
+              backgroundColor: this.usedColors,
+              borderColor: this.usedColors.map(color => {
+                return (0, _utility.shadeColor)(color, -30);
+              }),
+              borderWidth: 1
+            }]
+          },
+          options: {
+            plugins: {
+              title: {
+                display: true,
+                text: 'New Cases per variant'
+              }
+            },
+            responsive: true
+          }
+        });
+      }
+    }
+  };
+  progressState.changeState(index);
+  console.log(progressState);
+  const player = document.createElement('div');
+  player.id = 'player';
+  const playerButton = document.createElement('div');
+  player.appendChild(playerButton);
+  playerButton.id = 'play-button';
+  playerButton.innerHTML = `<span class="material-icons-outlined md-24">
+  play_arrow
+  </span>`;
+  const resetButton = document.createElement('div');
+  player.appendChild(resetButton);
+  resetButton.id = 'reset-button';
+  resetButton.innerHTML = `<span class="material-icons-outlined md-24">
+  replay
+  </span>`;
+  const progressBar = document.createElement('div');
+  player.appendChild(progressBar);
+  const progress = document.createElement('div');
+  progress.id = 'progress-amount';
+  progressBar.appendChild(progress);
+  progress.style.width = 0;
   const para = document.createElement('p');
-  para.textContent = `The country code for variants is ${countryCode}, ${_commons.dataURLs.variants}`;
-  return para;
+  progressBar.appendChild(para);
+  para.textContent = parsedData['date'][index];
+
+  const updateProgress = (currentIndex, limit, parent) => {
+    const children = parent.childNodes;
+    children[0].style.width = currentIndex / limit * parent.clientWidth;
+    children[1].textContent = parsedData['date'][currentIndex];
+  };
+
+  playerButton.addEventListener('click', () => {
+    if (playerButton.classList.contains('paused')) {
+      playerButton.classList.remove('paused');
+      playerButton.classList.add('playing');
+      playerButton.firstChild.textContent = 'pause';
+
+      if (index >= parsedData['date'].length - 1) {
+        index = 0;
+      }
+
+      interval = setInterval(() => {
+        ++index;
+
+        if (index > parsedData['date'].length - 1) {
+          playerButton.click;
+        }
+
+        progressState.changeState(index);
+        updateProgress(index, parsedData['date'].length - 1, progressBar);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      playerButton.classList.remove('playing');
+      playerButton.classList.add('paused');
+      playerButton.firstChild.textContent = 'play_arrow';
+    }
+  });
+  resetButton.addEventListener('click', () => {
+    if (playerButton.classList.contains('playing')) {
+      playerButton.click;
+    }
+
+    index = 0;
+    progressState.changeState(0);
+    updateProgress(index, parsedData['date'].length - 1, progressBar);
+  });
+  variantsSkeleton['div'].forEach(div => {
+    chartsWrapper.appendChild(div);
+  });
+  return chartsWrapper;
 }
-},{"./data-procesing":"modules/data-procesing.js","./commons":"modules/commons.js","chart.js/auto":"../node_modules/chart.js/auto/auto.esm.js"}],"modules/dom-manipulation.js":[function(require,module,exports) {
+},{"./data-procesing":"modules/data-procesing.js","./commons":"modules/commons.js","./utility":"modules/utility.js","chart.js/auto":"../node_modules/chart.js/auto/auto.esm.js"}],"modules/dom-manipulation.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -137477,7 +137882,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52712" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56736" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

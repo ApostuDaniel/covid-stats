@@ -1,5 +1,12 @@
 import { getJSON, csvtojson } from './data-procesing';
 import { dataURLs, covidData } from './commons';
+import {
+  shadeColor,
+  ChartsSkeleton,
+  createDateLabel,
+  createInfoSource,
+  getRandomInt,
+} from './utility';
 import Chart from 'chart.js/auto';
 
 const API_KEY = 'zMJpTq2kJPv6NHOFDyPpgUoOpMgOsBOerfYHAefz';
@@ -39,10 +46,10 @@ async function isDataPresent(type) {
 async function getOverviewData(countryCode) {
   await isDataPresent('general');
   const data = covidData.general[countryCode];
+  console.log(data);
 
   const info = document.createElement('div');
   info.id = 'main-info';
-  console.log(data);
   // const searchTerm =
   //   jsonData['location'].toLowerCase().replace(' ', '-') + '-map';
 
@@ -125,51 +132,6 @@ async function getOverviewData(countryCode) {
   return info;
 }
 
-class ChartsSkeleton {
-  constructor(chartIDArray, canvasWidth, canvasHeight) {
-    this.chartsID = [...chartIDArray];
-    this.div = [];
-    this.canvas = [];
-    this.ctx = [];
-    this.chartsID.forEach((chartID) => {
-      const newDiv = document.createElement('div');
-      const newCanvas = document.createElement('canvas');
-      newCanvas.id = chartID;
-      newCanvas.width = canvasWidth;
-      newCanvas.height = canvasHeight;
-      newDiv.id = `${chartID}-div`;
-      newDiv.style.position = 'relative';
-      newDiv.appendChild(newCanvas);
-      const newCtx = newCanvas.getContext('2d');
-      this.div.push(newDiv);
-      this.canvas.push(newCanvas);
-      this.ctx.push(newCtx);
-    });
-  }
-}
-
-function createDateLabel(date) {
-  let day = new Date(date);
-  return day.toDateString().slice(3);
-}
-
-function createInfoSource(lastObservationDate, sourceURL, sourceLabel) {
-  const source = document.createElement('div');
-  source.classList.add('source');
-  const para = document.createElement('p');
-  const a = document.createElement('a');
-
-  let textContent = new Date(lastObservationDate).toDateString();
-  para.textContent = `Last observation date: ${textContent}`;
-  a.textContent = `Source: ${sourceLabel}`;
-  a.href = sourceURL;
-  a.target = '_blank';
-
-  source.appendChild(para);
-  source.appendChild(a);
-  return source;
-}
-
 async function getTestingData(countryCode) {
   await isDataPresent('testing');
   const testingData = covidData.testing.filter((testData) => {
@@ -229,7 +191,7 @@ async function getTestingData(countryCode) {
           backgroundColor: 'rgba(135, 206, 250, 0.8)',
           fill: {
             target: 'origin',
-            below: 'rgba(135, 206, 250, 0.8)',
+            above: 'rgba(135, 206, 250, 0.5)',
           },
           cubicInterpolationMode: 'monotone',
           pointRadius: 2,
@@ -356,7 +318,7 @@ async function getTestingData(countryCode) {
           backgroundColor: 'rgba(135, 206, 250, 0.8)',
           fill: {
             target: 'origin',
-            below: 'rgba(135, 206, 250, 0.8)',
+            above: 'rgba(135, 206, 250, 0.5)',
           },
           cubicInterpolationMode: 'monotone',
           pointRadius: 2,
@@ -599,7 +561,7 @@ async function getConfirmedData(countryCode) {
           backgroundColor: 'rgba(247, 0, 0, 0.8)',
           fill: {
             target: 'origin',
-            below: 'rgba(247, 0, 0, 0.8)',
+            above: 'rgba(247, 0, 0, 0.5)',
           },
           cubicInterpolationMode: 'monotone',
           pointRadius: 2,
@@ -895,15 +857,442 @@ async function getVaccinationsData(countryCode) {
 }
 
 async function getMortalityData(countryCode) {
-  const para = document.createElement('p');
-  para.textContent = `The country code for mortality is ${countryCode}, ${dataURLs.mortality}`;
-  return para;
+  await isDataPresent('general');
+  const mortalityData = covidData.general[countryCode]['data'];
+  if (mortalityData.length == 0) return null;
+
+  const chartsWrapper = document.createElement('div');
+  chartsWrapper.id = 'charts-wrapper';
+
+  const mortalitySkeleton = new ChartsSkeleton(
+    ['new_deaths_smoothed', 'total_deaths'],
+    400,
+    400
+  );
+  const new_deathsData = { data: [], labels: [] };
+  const total_deathsData = { data: [], labels: [] };
+
+  mortalityData.forEach((dailyReport) => {
+    if (dailyReport['new_deaths_smoothed'] !== '') {
+      new_deathsData['data'].push(dailyReport['new_deaths_smoothed']);
+      new_deathsData['labels'].push(createDateLabel(dailyReport['date']));
+    }
+    if (dailyReport['total_deaths'] !== '') {
+      total_deathsData['data'].push(dailyReport['total_deaths']);
+      total_deathsData['labels'].push(createDateLabel(dailyReport['date']));
+    }
+  });
+
+  const newChart = new Chart(mortalitySkeleton['ctx'][0], {
+    type: 'bar',
+    data: {
+      labels: new_deathsData['labels'],
+      datasets: [
+        {
+          label: 'New deaths',
+          data: new_deathsData['data'],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'New registered deaths attributed to Covid-19(7-day smoothed)',
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb',
+        },
+        legend: {
+          display: false,
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date',
+          },
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Deaths',
+          },
+        },
+      },
+      datasets: {
+        bar: {
+          borderColor: (context) => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return 'rgba(171, 5, 1, 0.9)';
+            else {
+              return value < context.dataset.data[index - 1]
+                ? 'rgba(98, 175, 68, 0.9)'
+                : 'rgba(171, 5, 1, 0.9)';
+            }
+          },
+          backgroundColor: (context) => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return 'rgba(247, 0, 0, 0.8)';
+            else {
+              return value < context.dataset.data[index - 1]
+                ? 'rgba(81, 233, 0, 0.8)'
+                : 'rgba(247, 0, 0, 0.8)';
+            }
+          },
+        },
+      },
+    },
+  });
+
+  const totalChart = new Chart(mortalitySkeleton['ctx'][1], {
+    type: 'line',
+    data: {
+      labels: total_deathsData['labels'],
+      datasets: [
+        {
+          label: 'Total deaths',
+          data: total_deathsData['data'],
+          borderColor: 'rgba(171, 12, 12, 0.9)',
+          backgroundColor: 'rgba(25, 25, 25, 0.8)',
+          fill: {
+            target: 'origin',
+            above: 'rgba(25, 25, 25, 0.5)',
+          },
+          cubicInterpolationMode: 'monotone',
+          pointRadius: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Cumulative Total Deaths attributed to Covid-19',
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb',
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date',
+          },
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Total deaths',
+          },
+        },
+      },
+    },
+  });
+
+  mortalitySkeleton['div'].forEach((div) => {
+    chartsWrapper.appendChild(div);
+  });
+  return chartsWrapper;
 }
 
 async function getVariantsData(countryCode) {
+  await isDataPresent('variants');
+  await isDataPresent('general');
+  const location = covidData['general'][countryCode]['location'];
+  console.log(location);
+
+  const variantsDataRaw = covidData['variants'].filter((dailyReport) => {
+    return dailyReport['location'] === location;
+  });
+
+  if (variantsDataRaw.length == 0) return null;
+  const chartsWrapper = document.createElement('div');
+  chartsWrapper.id = 'charts-wrapper';
+
+  console.log(variantsDataRaw);
+  const variantsSkeleton = new ChartsSkeleton(
+    ['total_variants', 'progress_variants'],
+    400,
+    400
+  );
+
+  const parsedData = {
+    date: [],
+    num_sequences_total: [],
+    variants: {},
+  };
+
+  variantsDataRaw.forEach((dailyReport) => {
+    if (dailyReport['variant'] === 'non_who') return;
+
+    const date = createDateLabel(dailyReport['date']);
+    if (
+      parsedData['date'].length === 0 ||
+      parsedData['date'][parsedData['date'].length - 1] !== date
+    ) {
+      parsedData['date'].push(date);
+      parsedData['num_sequences_total'].push(
+        Number(dailyReport['num_sequences_total'])
+      );
+    }
+    if (!parsedData['variants'][dailyReport['variant']]) {
+      parsedData['variants'][dailyReport['variant']] = { new: [], total: [] };
+    }
+    parsedData['variants'][dailyReport['variant']]['new'].push(
+      Number(dailyReport['num_sequences'])
+    );
+
+    const variantTotal =
+      parsedData['variants'][dailyReport['variant']]['total'];
+
+    variantTotal.push(
+      variantTotal.length === 0
+        ? Number(dailyReport['num_sequences'])
+        : variantTotal[variantTotal.length - 1] +
+            Number(dailyReport['num_sequences'])
+    );
+  });
+
+  const variantDatasets = [];
+  const kelly_colors = [
+    '#F2F3F4',
+    '#222222',
+    '#F3C300',
+    '#875692',
+    '#F38400',
+    '#A1CAF1',
+    '#BE0032',
+    '#C2B280',
+    '#848482',
+    '#8856',
+    '#E68FAC',
+    '#0067A5',
+    '#F99379',
+    '#604E97',
+    '#F6A600',
+    '#B3446C',
+    '#DCD300',
+    '#882D17',
+    '#8DB600',
+    '#654522',
+    '#E25822',
+    '#2B3D26',
+  ];
+
+  Object.keys(parsedData['variants']).forEach((variantName, index) => {
+    const total = parsedData['variants'][variantName]['total'];
+    if (total[total.length - 1] === 0) {
+      delete parsedData['variants'][variantName];
+    } else {
+      const darkColor = shadeColor(kelly_colors[index], -30);
+      variantDatasets.push({
+        label: variantName,
+        data: total,
+        backgroundColor: kelly_colors[index],
+        borderColor: darkColor,
+      });
+    }
+  });
+
+  console.log(parsedData);
+
+  const chartTotal = new Chart(variantsSkeleton['ctx'][0], {
+    type: 'bar',
+    data: {
+      labels: parsedData['date'],
+      datasets: variantDatasets,
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Total number of cases registered per variant',
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      elements: {
+        bar: {
+          borderWidth: 1,
+        },
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Date',
+          },
+          stacked: true,
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Confirmed Cases',
+          },
+          stacked: true,
+        },
+      },
+    },
+  });
+
+  let index = 0;
+  let interval;
+  const progressState = {
+    state: null,
+    usedColors: [],
+    labels: [],
+    data: [],
+    chart: null,
+    changeState: function (newState) {
+      this.state = newState;
+      this.usedColors = [];
+      this.labels = [];
+      this.data = [];
+      Object.keys(parsedData['variants']).forEach(
+        (variantName, variantIndex) => {
+          let value = parsedData['variants'][variantName]['new'][this.state];
+          if (value && value > 0) {
+            this.usedColors.push(kelly_colors[variantIndex]);
+            this.labels.push(variantName);
+            this.data.push(value);
+          }
+        }
+      );
+      if (this.chart) {
+        this.chart.data.labels = this.labels;
+        this.chart.datasets[0].data = this.data;
+        this.chart.datasets[0].backgroundColor = this.usedColors;
+        this.chart.datasets[0].borderColor = this.usedColors.map((color) => {
+          return shadeColor(color, -30);
+        });
+      } else {
+        this.chart = new Chart(variantsSkeleton['ctx'][1], {
+          type: 'pie',
+          data: {
+            labels: this.labels,
+            datasets: [
+              {
+                data: this.data,
+                backgroundColor: this.usedColors,
+                borderColor: this.usedColors.map((color) => {
+                  return shadeColor(color, -30);
+                }),
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              title: {
+                display: true,
+                text: 'New Cases per variant',
+              },
+            },
+            responsive: true,
+          },
+        });
+      }
+    },
+  };
+
+  progressState.changeState(index);
+
+  console.log(progressState);
+
+  const player = document.createElement('div');
+  player.id = 'player';
+  const playerButton = document.createElement('div');
+  player.appendChild(playerButton);
+  playerButton.id = 'play-button';
+  playerButton.innerHTML = `<span class="material-icons-outlined md-24">
+  play_arrow
+  </span>`;
+  const resetButton = document.createElement('div');
+  player.appendChild(resetButton);
+  resetButton.id = 'reset-button';
+  resetButton.innerHTML = `<span class="material-icons-outlined md-24">
+  replay
+  </span>`;
+  const progressBar = document.createElement('div');
+  player.appendChild(progressBar);
+  const progress = document.createElement('div');
+  progress.id = 'progress-amount';
+  progressBar.appendChild(progress);
+  progress.style.width = 0;
   const para = document.createElement('p');
-  para.textContent = `The country code for variants is ${countryCode}, ${dataURLs.variants}`;
-  return para;
+  progressBar.appendChild(para);
+  para.textContent = parsedData['date'][index];
+
+  const updateProgress = (currentIndex, limit, parent) => {
+    const children = parent.childNodes;
+
+    children[0].style.width = (currentIndex / limit) * parent.clientWidth;
+    children[1].textContent = parsedData['date'][currentIndex];
+  };
+
+  playerButton.addEventListener('click', () => {
+    if (playerButton.classList.contains('paused')) {
+      playerButton.classList.remove('paused');
+      playerButton.classList.add('playing');
+      playerButton.firstChild.textContent = 'pause';
+      if (index >= parsedData['date'].length - 1) {
+        index = 0;
+      }
+      interval = setInterval(() => {
+        ++index;
+        if (index > parsedData['date'].length - 1) {
+          playerButton.click;
+        }
+        progressState.changeState(index);
+        updateProgress(index, parsedData['date'].length - 1, progressBar);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      playerButton.classList.remove('playing');
+      playerButton.classList.add('paused');
+      playerButton.firstChild.textContent = 'play_arrow';
+    }
+  });
+  resetButton.addEventListener('click', () => {
+    if (playerButton.classList.contains('playing')) {
+      playerButton.click;
+    }
+    index = 0;
+    progressState.changeState(0);
+    updateProgress(index, parsedData['date'].length - 1, progressBar);
+  });
+
+  variantsSkeleton['div'].forEach((div) => {
+    chartsWrapper.appendChild(div);
+  });
+
+  return chartsWrapper;
 }
 
 export {
