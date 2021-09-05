@@ -1,0 +1,20 @@
+* {
+  box-sizing: border-box;
+}
+
+.outline {
+  outline: 2px solid #ccc;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+#country-id {
+  display: flex;
+  justify-content: space-evenly;
+  width: 50%;
+}
+
+
+/*# sourceMappingURL=/style.251b6741.css.map */

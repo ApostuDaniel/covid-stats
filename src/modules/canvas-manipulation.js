@@ -1168,7 +1168,29 @@ async function getVariantsData(countryCode) {
     usedColors: [],
     labels: [],
     data: [],
-    chart: null,
+    chart: new Chart(variantsSkeleton['ctx'][1], {
+      type: 'pie',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            data: [],
+            backgroundColor: [],
+            borderColor: [],
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: 'New Cases per variant',
+          },
+        },
+        responsive: true,
+      },
+    }),
     changeState: function (newState) {
       this.state = newState;
       this.usedColors = [];
@@ -1184,76 +1206,61 @@ async function getVariantsData(countryCode) {
           }
         }
       );
-      if (this.chart) {
-        this.chart.data.labels = this.labels;
-        this.chart.datasets[0].data = this.data;
-        this.chart.datasets[0].backgroundColor = this.usedColors;
-        this.chart.datasets[0].borderColor = this.usedColors.map((color) => {
-          return shadeColor(color, -30);
-        });
-      } else {
-        this.chart = new Chart(variantsSkeleton['ctx'][1], {
-          type: 'pie',
-          data: {
-            labels: this.labels,
-            datasets: [
-              {
-                data: this.data,
-                backgroundColor: this.usedColors,
-                borderColor: this.usedColors.map((color) => {
-                  return shadeColor(color, -30);
-                }),
-                borderWidth: 1,
-              },
-            ],
-          },
-          options: {
-            plugins: {
-              title: {
-                display: true,
-                text: 'New Cases per variant',
-              },
-            },
-            responsive: true,
-          },
-        });
-      }
+      this.chart.data.labels = this.labels;
+      this.chart.data.datasets = [
+        {
+          data: progressState['data'],
+          backgroundColor: progressState['usedColors'],
+          borderColor: progressState['usedColors'].map((color) => {
+            return shadeColor(color, -30);
+          }),
+          borderWidth: 1,
+        },
+      ];
+      this.chart.update('none');
     },
   };
 
   progressState.changeState(index);
+  console.log(progressState.chart);
 
   console.log(progressState);
 
   const player = document.createElement('div');
   player.id = 'player';
+
   const playerButton = document.createElement('div');
+  playerButton.classList.add('button-type');
+  playerButton.classList.add('paused');
   player.appendChild(playerButton);
   playerButton.id = 'play-button';
-  playerButton.innerHTML = `<span class="material-icons-outlined md-24">
-  play_arrow
-  </span>`;
+  playerButton.innerHTML = `<span class="material-icons md-24">play_arrow</span>`;
+
   const resetButton = document.createElement('div');
   player.appendChild(resetButton);
   resetButton.id = 'reset-button';
-  resetButton.innerHTML = `<span class="material-icons-outlined md-24">
-  replay
-  </span>`;
+  resetButton.classList.add('button-type');
+  resetButton.innerHTML = `<span class="material-icons md-24">replay</span>`;
+
   const progressBar = document.createElement('div');
+  progressBar.classList.add('progress-bar');
   player.appendChild(progressBar);
+
   const progress = document.createElement('div');
   progress.id = 'progress-amount';
   progressBar.appendChild(progress);
   progress.style.width = 0;
+
   const para = document.createElement('p');
   progressBar.appendChild(para);
   para.textContent = parsedData['date'][index];
 
-  const updateProgress = (currentIndex, limit, parent) => {
-    const children = parent.childNodes;
-
-    children[0].style.width = (currentIndex / limit) * parent.clientWidth;
-    children[1].textContent = parsedData['date'][currentIndex];
+  const updateProgress = (currentIndex, limit) => {
+    const fill = document.querySelector('#progress-amount');
+    const text = document.querySelector('.progress-bar p');
+    fill.style.width =
+      (currentIndex / limit) * fill.parentElement.clientWidth + 'px';
+    text.textContent = parsedData['date'][currentIndex];
   };
 
   playerButton.addEventListener('click', () => {
@@ -1267,10 +1274,11 @@ async function getVariantsData(countryCode) {
       interval = setInterval(() => {
         ++index;
         if (index > parsedData['date'].length - 1) {
-          playerButton.click;
+          playerButton.click();
+        } else {
+          progressState.changeState(index);
+          updateProgress(index, parsedData['date'].length - 1);
         }
-        progressState.changeState(index);
-        updateProgress(index, parsedData['date'].length - 1, progressBar);
       }, 1000);
     } else {
       clearInterval(interval);
@@ -1281,12 +1289,32 @@ async function getVariantsData(countryCode) {
   });
   resetButton.addEventListener('click', () => {
     if (playerButton.classList.contains('playing')) {
-      playerButton.click;
+      playerButton.click();
     }
     index = 0;
     progressState.changeState(0);
-    updateProgress(index, parsedData['date'].length - 1, progressBar);
+    updateProgress(index, parsedData['date'].length - 1);
   });
+
+  progressBar.onclick = (e) => {
+    const bounds = e.target.getBoundingClientRect();
+    let x = e.clientX - bounds.left;
+    index = Math.ceil(
+      (x / progressBar.clientWidth) * (parsedData['date'].length - 1)
+    );
+    if (playerButton.classList.contains('playing')) {
+      playerButton.click();
+    }
+    progressState.changeState(index);
+    updateProgress(index, parsedData['date'].length - 1);
+  };
+
+  const usageInfo = document.createElement('p');
+  usageInfo.textContent =
+    'Use this player to see a progresion of the coronavirus strains';
+  variantsSkeleton['div'][1].appendChild(usageInfo);
+
+  variantsSkeleton['div'][1].appendChild(player);
 
   variantsSkeleton['div'].forEach((div) => {
     chartsWrapper.appendChild(div);
