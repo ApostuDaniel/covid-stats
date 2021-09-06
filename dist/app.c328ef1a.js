@@ -119320,6 +119320,7 @@ class ChartsSkeleton {
       newCanvas.width = canvasWidth;
       newCanvas.height = canvasHeight;
       newDiv.id = `${chartID}-div`;
+      newDiv.classList.add('canvas-wrapper');
       newDiv.style.position = 'relative';
       newDiv.appendChild(newCanvas);
       const newCtx = newCanvas.getContext('2d');
@@ -137841,12 +137842,27 @@ input.onclick = () => {
   input.value = '';
 };
 
+const selectSection = async section => {
+  mainContent.setAttribute('data-current-section', section.id);
+  navSections.forEach(selection => {
+    if (selection.classList.contains('selected')) {
+      selection.classList.remove('selected');
+    }
+  });
+  section.classList.add('selected');
+
+  if (input.value) {
+    await (0, _domManipulation.populateMain)(input.getAttribute('data-iso'));
+  }
+};
+
 navSections.forEach(section => {
   section.addEventListener('click', async () => {
-    mainContent.setAttribute('data-current-section', section.id);
-
-    if (input.value) {
-      await (0, _domManipulation.populateMain)(input.getAttribute('data-iso'));
+    selectSection(section);
+  });
+  section.addEventListener('keydown', async e => {
+    if (e.code === 'Enter') {
+      selectSection(section);
     }
   });
 });
@@ -137899,7 +137915,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55795" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62715" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

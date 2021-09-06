@@ -5,19 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Covid-19 in Data</title>
     <link rel="stylesheet" href="./styles/normalize.css" />
-    <link rel="stylesheet" href="./styles/style.css" />
+    <link rel="stylesheet" href="./styles/style.pcss" />
     <link rel="stylesheet" href="./styles/player.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
-      crossorigin="anonymous"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap"
       rel="stylesheet"
-      crossorigin="anonymous"
     />
     <link
       rel="shortcut icon"
@@ -27,55 +25,60 @@
     <script src="app.js" defer></script>
   </head>
   <body>
-    <header class="outline">
-      <h1>Covid-19 in Data</h1>
-      <p>
-        Get detailed and easily digestable information about the Covid-19
-        pandemic.
-      </p>
-    </header>
-    <main class="outline">
-      <div class="input-area">
-        <label for="country">Country name or ISO code</label>
-        <input
-          list="countries"
-          type="text"
-          placeholder="Please wait..."
-          id="country"
-          data-iso=""
-          value=""
-          disabled
-        />
-        <datalist id="countries"></datalist>
-        <button type="submit" id="get-info" disabled>Get Info</button>
-        <button type="button" id="localization" disabled>
-          Get My Location
-        </button>
-      </div>
-      <section id="main-content-area" data-current-section="overview">
-        <h2>NO DATA YET</h2>
+    <div id="content-wrapper">
+      <header class="main-header">
+        <div class="animation"></div>
+        <div>
+          <h1><b>Covid-19</b> in Data</h1>
+          <p>
+            Get detailed and easily digestable information about the Covid-19
+            pandemic.
+          </p>
+        </div>
+      </header>
+      <nav>
+        <ul id="nav-list" tabindex="0" aria-label="Navigation Bar">
+          <li id="overview" class="selected" tabindex="0">Overview</li>
+          <li id="testing" tabindex="0">Testing</li>
+          <li id="confirmed" tabindex="0">Confirmed Cases</li>
+          <li id="vaccinations" tabindex="0">Vaccinations</li>
+          <li id="mortality" tabindex="0">Mortality</li>
+          <li id="variants" tabindex="0">Variants</li>
+        </ul>
+      </nav>
+      <main tabindex="1">
+        <div class="input-area">
+          <label for="country">Country name or ISO code</label>
+          <input
+            list="countries"
+            type="text"
+            placeholder="Please wait..."
+            id="country"
+            data-iso=""
+            value=""
+            disabled
+          />
+          <datalist id="countries"></datalist>
+          <button type="submit" id="get-info" disabled>Get Info</button>
+          <button type="button" id="localization" disabled>
+            Get My Location
+          </button>
+        </div>
+        <section id="main-content-area" data-current-section="overview">
+          <h2>NO DATA YET</h2>
+          <p>
+            Fill the <span>input field</span> with a valid value, or click
+            <span>Get My Location</span> to get custom data for your country
+          </p>
+        </section>
+      </main>
+      <footer>
         <p>
-          Fill the <span>input field</span> with a valid value, or click
-          <span>Get My Location</span> to get custom data for your country
+          <a href="https://icons8.com/icon/10221/coronavirus"
+            >Coronavirus icon by Icons8</a
+          >
         </p>
-      </section>
-    </main>
-    <nav>
-      <ul id="nav-list" class="outline">
-        <li id="overview">Overview</li>
-        <li id="testing">Testing</li>
-        <li id="confirmed">Confirmed Cases</li>
-        <li id="vaccinations">Vaccinations</li>
-        <li id="mortality">Mortality</li>
-        <li id="variants">Variants</li>
-      </ul>
-    </nav>
-    <footer class="outline">
-      <p>
-        <a href="https://icons8.com/icon/10221/coronavirus"
-          >Coronavirus icon by Icons8</a
-        >
-      </p>
-    </footer>
+      </footer>
+    </div>
   </body>
 </html>

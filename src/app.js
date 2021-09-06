@@ -14,11 +14,26 @@ input.onclick = () => {
   input.value = '';
 };
 
+const selectSection = async (section) => {
+  mainContent.setAttribute('data-current-section', section.id);
+  navSections.forEach((selection) => {
+    if (selection.classList.contains('selected')) {
+      selection.classList.remove('selected');
+    }
+  });
+  section.classList.add('selected');
+  if (input.value) {
+    await populateMain(input.getAttribute('data-iso'));
+  }
+};
+
 navSections.forEach((section) => {
   section.addEventListener('click', async () => {
-    mainContent.setAttribute('data-current-section', section.id);
-    if (input.value) {
-      await populateMain(input.getAttribute('data-iso'));
+    selectSection(section);
+  });
+  section.addEventListener('keydown', async (e) => {
+    if (e.code === 'Enter') {
+      selectSection(section);
     }
   });
 });

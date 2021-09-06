@@ -32,6 +32,7 @@ class ChartsSkeleton {
       newCanvas.width = canvasWidth;
       newCanvas.height = canvasHeight;
       newDiv.id = `${chartID}-div`;
+      newDiv.classList.add('canvas-wrapper');
       newDiv.style.position = 'relative';
       newDiv.appendChild(newCanvas);
       const newCtx = newCanvas.getContext('2d');
