@@ -11,6 +11,8 @@ import { covidData } from './commons';
 
 import { getJSON } from './data-procesing';
 
+import { addLoading, removeLoading } from './utility';
+
 function populateDataList(countryData) {
   const datalist = document.querySelector('#countries');
   const input = document.querySelector('#country');
@@ -36,9 +38,12 @@ function attachContent(element, parent) {
   } else {
     const placeholder = document.createElement('div');
     placeholder.classList.add('no-data');
+    const h2 = document.createElement('h2');
+    h2.textContent = 'No such data currently';
     const para = document.createElement('p');
-    placeholder.textContent =
+    para.textContent =
       "We are sorry, we don't have the data you want for this particular country";
+    placeholder.append(h2);
     placeholder.appendChild(para);
     parent.appendChild(placeholder);
   }
@@ -89,6 +94,8 @@ async function populateMain(countryCode) {
     mainContent.removeChild(mainContent.firstChild);
   }
 
+  addLoading(mainContent, null);
+
   switch (currentSection) {
     case 'overview':
       content = await getOverviewData(countryCode);
@@ -115,6 +122,7 @@ async function populateMain(countryCode) {
     .charAt(0)
     .toUpperCase()}${currentSection.slice(1)}`;
   const header = await populateMainHeader(countryCode, sectionName);
+  removeLoading(mainContent, null, null);
   mainContent.appendChild(header);
   attachContent(content, mainContent);
 }

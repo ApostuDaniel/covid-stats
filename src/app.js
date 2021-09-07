@@ -2,7 +2,10 @@ import { getLocation } from './modules/location.js';
 import { populateMain, populateDataList } from './modules/dom-manipulation.js';
 import { countryList } from './modules/data-procesing.js';
 import { isDataPresent } from './modules/canvas-manipulation.js';
+import { addLoading, removeLoading } from './modules/utility.js';
 
+const main = document.querySelector('main');
+const mainWrapper = document.querySelector('.main-wrapper');
 const mainContent = document.querySelector('#main-content-area');
 const navList = document.querySelector('#nav-list');
 const navSections = [...navList.children];
@@ -51,10 +54,34 @@ currentLocationButton.addEventListener('click', async () => {
   await populateMain(input.getAttribute('data-iso'));
 });
 
+const expandTag = document.querySelector('#expand-nav');
+const nav = document.querySelector('nav');
+expandTag.addEventListener('click', () => {
+  if (nav.classList.contains('hidden')) {
+    nav.classList.remove('hidden');
+    nav.classList.add('showing');
+    expandTag.firstElementChild.textContent = ' keyboard_double_arrow_right ';
+  } else {
+    nav.classList.remove('showing');
+    nav.classList.add('hidden');
+    expandTag.firstElementChild.textContent = ' menu_open ';
+  }
+});
+
+main.addEventListener('click', () => {
+  if (nav.classList.contains('showing')) {
+    nav.classList.remove('showing');
+    nav.classList.add('hidden');
+    expandTag.firstElementChild.textContent = ' menu_open ';
+  }
+});
+
 window.onload = async () => {
+  addLoading(main, mainWrapper);
   await isDataPresent('general');
   const locationsList = await countryList();
   populateDataList(locationsList);
+  removeLoading(main, mainWrapper, 'block');
   input.setAttribute('placeholder', 'Type here...');
   input.disabled = false;
   getInfoButton.disabled = false;

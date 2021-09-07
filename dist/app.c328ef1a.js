@@ -119288,6 +119288,8 @@ exports.shadeColor = shadeColor;
 exports.createDateLabel = createDateLabel;
 exports.createInfoSource = createInfoSource;
 exports.getRandomInt = getRandomInt;
+exports.addLoading = addLoading;
+exports.removeLoading = removeLoading;
 exports.ChartsSkeleton = void 0;
 
 //Used for ligthening/darkening colors
@@ -119358,6 +119360,44 @@ function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+}
+
+function createLoadingIcon() {
+  const div0 = document.createElement('div');
+  div0.classList.add('loading-wrapper');
+  const div1 = document.createElement('div');
+  div1.classList.add('loadingio-spinner-pulse-fy6fkd7vgx');
+  div0.appendChild(div1);
+  const div2 = document.createElement('div');
+  div2.classList.add('ldio-7p3pmrtnzis');
+  div1.appendChild(div2);
+
+  for (let i = 0; i < 3; ++i) {
+    div2.appendChild(document.createElement('div'));
+  }
+
+  return div0;
+}
+
+function addLoading(parent, div) {
+  const loading = createLoadingIcon();
+  let currentDisplay = null;
+
+  if (div) {
+    currentDisplay = div.style.display;
+    div.style.display = 'none';
+  }
+
+  parent.appendChild(loading);
+  return currentDisplay;
+}
+
+function removeLoading(parent, div, display) {
+  if (div) {
+    div.style.display = display;
+  }
+
+  parent.removeChild(document.querySelector('.loading-wrapper'));
 }
 },{}],"../node_modules/chart.js/dist/chunks/helpers.segment.js":[function(require,module,exports) {
 "use strict";
@@ -136639,21 +136679,18 @@ async function getOverviewData(countryCode) {
   const data = _commons.covidData.general[countryCode];
   console.log(data);
   const info = document.createElement('div');
-  info.id = 'main-info'; // const searchTerm =
-  //   jsonData['location'].toLowerCase().replace(' ', '-') + '-map';
-  // const iconInfo = await getJSON(
-  //   `https://search.icons8.com/api/iconsets/v5/search?term=${searchTerm}&token=${API_KEY}&amount=1`
-  // );
-  // const icon = await getJSON(
-  //   `https://api-icons.icons8.com/publicApi/icons/icon?id=${iconInfo['icons'][0]['id']}&token=${API_KEY}`
-  // );
-  // console.log(icon);
-  // if (icon && icon['icon']['category'] === 'maps') {
-  //   const countryMap = document.createElement('div');
-  //   countryMap.innerHTML = icon['icon']['svg'];
-  //   countryMap.id = 'country-map-icon';
-  //   info.appendChild(countryMap);
-  // }
+  info.id = 'main-info';
+  const searchTerm = data['location'].toLowerCase().replace(' ', '-') + '-map';
+  const iconInfo = await (0, _dataProcesing.getJSON)(`https://search.icons8.com/api/iconsets/v5/search?term=${searchTerm}&token=${API_KEY}&amount=1`);
+  const icon = await (0, _dataProcesing.getJSON)(`https://api-icons.icons8.com/publicApi/icons/icon?id=${iconInfo['icons'][0]['id']}&token=${API_KEY}`);
+  console.log(icon);
+
+  if (icon && icon['icon']['category'] === 'maps') {
+    const countryMap = document.createElement('div');
+    countryMap.innerHTML = icon['icon']['svg'];
+    countryMap.id = 'country-map-icon';
+    info.appendChild(countryMap);
+  }
 
   const infoSkeleton = {
     textContent: ['Population', 'Population density', 'Median age', 'GDP per capita', 'Aged 65 or older', 'Aged 70 or older', 'Male smokers', 'Female smokers', 'Diabetes prevalence', 'Cardiovascular death rate', 'Extreme poverty', 'Human Development Index', 'Life expectancy', 'Hospital beds per a thousand people'],
@@ -137719,6 +137756,8 @@ var _commons = require("./commons");
 
 var _dataProcesing = require("./data-procesing");
 
+var _utility = require("./utility");
+
 function populateDataList(countryData) {
   const datalist = document.querySelector('#countries');
   const input = document.querySelector('#country');
@@ -137744,8 +137783,11 @@ function attachContent(element, parent) {
   } else {
     const placeholder = document.createElement('div');
     placeholder.classList.add('no-data');
+    const h2 = document.createElement('h2');
+    h2.textContent = 'No such data currently';
     const para = document.createElement('p');
-    placeholder.textContent = "We are sorry, we don't have the data you want for this particular country";
+    para.textContent = "We are sorry, we don't have the data you want for this particular country";
+    placeholder.append(h2);
     placeholder.appendChild(para);
     parent.appendChild(placeholder);
   }
@@ -137786,6 +137828,8 @@ async function populateMain(countryCode) {
     mainContent.removeChild(mainContent.firstChild);
   }
 
+  (0, _utility.addLoading)(mainContent, null);
+
   switch (currentSection) {
     case 'overview':
       content = await (0, _canvasManipulation.getOverviewData)(countryCode);
@@ -137817,10 +137861,11 @@ async function populateMain(countryCode) {
 
   let sectionName = `${currentSection.charAt(0).toUpperCase()}${currentSection.slice(1)}`;
   const header = await populateMainHeader(countryCode, sectionName);
+  (0, _utility.removeLoading)(mainContent, null, null);
   mainContent.appendChild(header);
   attachContent(content, mainContent);
 }
-},{"./canvas-manipulation.js":"modules/canvas-manipulation.js","./commons":"modules/commons.js","./data-procesing":"modules/data-procesing.js"}],"app.js":[function(require,module,exports) {
+},{"./canvas-manipulation.js":"modules/canvas-manipulation.js","./commons":"modules/commons.js","./data-procesing":"modules/data-procesing.js","./utility":"modules/utility.js"}],"app.js":[function(require,module,exports) {
 "use strict";
 
 var _location = require("./modules/location.js");
@@ -137831,6 +137876,10 @@ var _dataProcesing = require("./modules/data-procesing.js");
 
 var _canvasManipulation = require("./modules/canvas-manipulation.js");
 
+var _utility = require("./modules/utility.js");
+
+const main = document.querySelector('main');
+const mainWrapper = document.querySelector('.main-wrapper');
 const mainContent = document.querySelector('#main-content-area');
 const navList = document.querySelector('#nav-list');
 const navSections = [...navList.children];
@@ -137877,17 +137926,39 @@ currentLocationButton.addEventListener('click', async () => {
   input.setAttribute('data-iso', location[0]);
   await (0, _domManipulation.populateMain)(input.getAttribute('data-iso'));
 });
+const expandTag = document.querySelector('#expand-nav');
+const nav = document.querySelector('nav');
+expandTag.addEventListener('click', () => {
+  if (nav.classList.contains('hidden')) {
+    nav.classList.remove('hidden');
+    nav.classList.add('showing');
+    expandTag.firstElementChild.textContent = ' keyboard_double_arrow_right ';
+  } else {
+    nav.classList.remove('showing');
+    nav.classList.add('hidden');
+    expandTag.firstElementChild.textContent = ' menu_open ';
+  }
+});
+main.addEventListener('click', () => {
+  if (nav.classList.contains('showing')) {
+    nav.classList.remove('showing');
+    nav.classList.add('hidden');
+    expandTag.firstElementChild.textContent = ' menu_open ';
+  }
+});
 
 window.onload = async () => {
+  (0, _utility.addLoading)(main, mainWrapper);
   await (0, _canvasManipulation.isDataPresent)('general');
   const locationsList = await (0, _dataProcesing.countryList)();
   (0, _domManipulation.populateDataList)(locationsList);
+  (0, _utility.removeLoading)(main, mainWrapper, 'block');
   input.setAttribute('placeholder', 'Type here...');
   input.disabled = false;
   getInfoButton.disabled = false;
   currentLocationButton.disabled = false;
 };
-},{"./modules/location.js":"modules/location.js","./modules/dom-manipulation.js":"modules/dom-manipulation.js","./modules/data-procesing.js":"modules/data-procesing.js","./modules/canvas-manipulation.js":"modules/canvas-manipulation.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"./modules/location.js":"modules/location.js","./modules/dom-manipulation.js":"modules/dom-manipulation.js","./modules/data-procesing.js":"modules/data-procesing.js","./modules/canvas-manipulation.js":"modules/canvas-manipulation.js","./modules/utility.js":"modules/utility.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -137915,7 +137986,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62715" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58569" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

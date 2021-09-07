@@ -71,10 +71,45 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
 }
 
+function createLoadingIcon() {
+  const div0 = document.createElement('div');
+  div0.classList.add('loading-wrapper');
+  const div1 = document.createElement('div');
+  div1.classList.add('loadingio-spinner-pulse-fy6fkd7vgx');
+  div0.appendChild(div1);
+  const div2 = document.createElement('div');
+  div2.classList.add('ldio-7p3pmrtnzis');
+  div1.appendChild(div2);
+  for (let i = 0; i < 3; ++i) {
+    div2.appendChild(document.createElement('div'));
+  }
+  return div0;
+}
+
+function addLoading(parent, div) {
+  const loading = createLoadingIcon();
+  let currentDisplay = null;
+  if (div) {
+    currentDisplay = div.style.display;
+    div.style.display = 'none';
+  }
+  parent.appendChild(loading);
+  return currentDisplay;
+}
+
+function removeLoading(parent, div, display) {
+  if (div) {
+    div.style.display = display;
+  }
+  parent.removeChild(document.querySelector('.loading-wrapper'));
+}
+
 export {
   shadeColor,
   ChartsSkeleton,
   createDateLabel,
   createInfoSource,
   getRandomInt,
+  addLoading,
+  removeLoading,
 };

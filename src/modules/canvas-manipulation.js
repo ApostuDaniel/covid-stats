@@ -50,25 +50,24 @@ async function getOverviewData(countryCode) {
 
   const info = document.createElement('div');
   info.id = 'main-info';
-  // const searchTerm =
-  //   jsonData['location'].toLowerCase().replace(' ', '-') + '-map';
+  const searchTerm = data['location'].toLowerCase().replace(' ', '-') + '-map';
 
-  // const iconInfo = await getJSON(
-  //   `https://search.icons8.com/api/iconsets/v5/search?term=${searchTerm}&token=${API_KEY}&amount=1`
-  // );
+  const iconInfo = await getJSON(
+    `https://search.icons8.com/api/iconsets/v5/search?term=${searchTerm}&token=${API_KEY}&amount=1`
+  );
 
-  // const icon = await getJSON(
-  //   `https://api-icons.icons8.com/publicApi/icons/icon?id=${iconInfo['icons'][0]['id']}&token=${API_KEY}`
-  // );
+  const icon = await getJSON(
+    `https://api-icons.icons8.com/publicApi/icons/icon?id=${iconInfo['icons'][0]['id']}&token=${API_KEY}`
+  );
 
-  // console.log(icon);
+  console.log(icon);
 
-  // if (icon && icon['icon']['category'] === 'maps') {
-  //   const countryMap = document.createElement('div');
-  //   countryMap.innerHTML = icon['icon']['svg'];
-  //   countryMap.id = 'country-map-icon';
-  //   info.appendChild(countryMap);
-  // }
+  if (icon && icon['icon']['category'] === 'maps') {
+    const countryMap = document.createElement('div');
+    countryMap.innerHTML = icon['icon']['svg'];
+    countryMap.id = 'country-map-icon';
+    info.appendChild(countryMap);
+  }
 
   const infoSkeleton = {
     textContent: [
