@@ -131,6 +131,168 @@ async function getOverviewData(countryCode) {
   return info;
 }
 
+function createRedGreenChart(
+  chartLabels,
+  dataSetLabel,
+  chartData,
+  ctx,
+  title,
+  x,
+  y,
+  isAsccendingGreen
+) {
+  let asccending, desccending;
+
+  if (isAsccendingGreen) {
+    asccending = 'rgba(98, 175, 68, 0.9)';
+    desccending = 'rgba(171, 5, 1, 0.9)';
+  } else {
+    asccending = 'rgba(171, 5, 1, 0.9)';
+    desccending = 'rgba(98, 175, 68, 0.9)';
+  }
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: dataSetLabel,
+          data: chartData,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+        },
+        legend: {
+          display: false,
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb',
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: x,
+          },
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: y,
+          },
+        },
+      },
+      datasets: {
+        bar: {
+          borderColor: (context) => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return asccending;
+            else {
+              return value >= context.dataset.data[index - 1]
+                ? asccending
+                : desccending;
+            }
+          },
+          backgroundColor: (context) => {
+            var index = context.dataIndex;
+            var value = context.dataset.data[index];
+            if (index === 0) return asccending.replace('0.9', '0.8');
+            else {
+              return value >= context.dataset.data[index - 1]
+                ? asccending.replace('0.9', '0.8')
+                : desccending.replace('0.9', '0.8');
+            }
+          },
+        },
+      },
+    },
+  });
+  return chart;
+}
+
+function createCumulativeChart(
+  chartLabels,
+  dataSetLabel,
+  chartData,
+  ctx,
+  title,
+  x,
+  y,
+  backgroundColor,
+  borderColor,
+  fillColor
+) {
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: dataSetLabel,
+          data: chartData,
+          borderColor: borderColor,
+          backgroundColor: backgroundColor,
+          fill: {
+            target: 'origin',
+            above: fillColor,
+          },
+          cubicInterpolationMode: 'monotone',
+          pointRadius: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb',
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: x,
+          },
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: y,
+          },
+        },
+      },
+    },
+  });
+  return chart;
+}
+
 async function getTestingData(countryCode) {
   await isDataPresent('testing');
   const testingData = covidData.testing.filter((testData) => {
@@ -178,259 +340,53 @@ async function getTestingData(countryCode) {
     }
   });
 
-  const chartCumulative = new Chart(testingSkeleton['ctx'][0], {
-    type: 'line',
-    data: {
-      labels: data_cumulative_tests['labels'],
-      datasets: [
-        {
-          label: 'Cumulative tests',
-          data: data_cumulative_tests['data'],
-          borderColor: 'rgba(64, 174, 223, 0.9)',
-          backgroundColor: 'rgba(135, 206, 250, 0.8)',
-          fill: {
-            target: 'origin',
-            above: 'rgba(135, 206, 250, 0.5)',
-          },
-          cubicInterpolationMode: 'monotone',
-          pointRadius: 2,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Cumulative Total Tests',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Total tests',
-          },
-        },
-      },
-    },
-  });
+  createCumulativeChart(
+    data_cumulative_tests['labels'],
+    'Cumulative tests',
+    data_cumulative_tests['data'],
+    testingSkeleton['ctx'][0],
+    'Cumulative Total Tests',
+    'Date',
+    'Total tests',
+    'rgba(135, 206, 250, 0.8)',
+    'rgba(64, 174, 223, 0.9)',
+    'rgba(135, 206, 250, 0.5)'
+  );
 
-  const chartDaily = new Chart(testingSkeleton['ctx'][1], {
-    type: 'bar',
-    data: {
-      labels: data_daily_change['labels'],
-      datasets: [
-        {
-          label: 'Daily tests',
-          data: data_daily_change['data'],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Daily tests (7-day-smoothed)',
-        },
-        legend: {
-          display: false,
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Tests executed',
-          },
-        },
-      },
-      datasets: {
-        bar: {
-          borderColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(98, 175, 68, 0.9)';
-            else {
-              return value >= context.dataset.data[index - 1]
-                ? 'rgba(98, 175, 68, 0.9)'
-                : 'rgba(171, 5, 1, 0.9)';
-            }
-          },
-          backgroundColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(81, 233, 0, 0.8)';
-            else {
-              return value >= context.dataset.data[index - 1]
-                ? 'rgba(81, 233, 0, 0.8)'
-                : 'rgba(247, 0, 0, 0.8)';
-            }
-          },
-        },
-      },
-    },
-  });
+  createRedGreenChart(
+    data_daily_change['labels'],
+    'Daily tests',
+    data_daily_change['data'],
+    testingSkeleton['ctx'][1],
+    'Daily tests (7-day-smoothed)',
+    'Date',
+    'Tests',
+    true
+  );
 
-  const chartPerThousand = new Chart(testingSkeleton['ctx'][2], {
-    type: 'line',
-    data: {
-      labels: data_per_thousand['labels'],
-      datasets: [
-        {
-          label: 'Tests per a thousand people',
-          data: data_per_thousand['data'],
-          borderColor: 'rgba(64, 174, 223, 0.9)',
-          backgroundColor: 'rgba(135, 206, 250, 0.8)',
-          fill: {
-            target: 'origin',
-            above: 'rgba(135, 206, 250, 0.5)',
-          },
-          cubicInterpolationMode: 'monotone',
-          pointRadius: 2,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Cumulative Tests per a thousand people',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Tests per thousand',
-          },
-        },
-      },
-    },
-  });
+  createCumulativeChart(
+    data_per_thousand['labels'],
+    'Tests per a thousand people',
+    data_per_thousand['data'],
+    testingSkeleton['ctx'][2],
+    'Cumulative Tests per a thousand people',
+    'Date',
+    'Tests per thousand',
+    'rgba(135, 206, 250, 0.8)',
+    'rgba(64, 174, 223, 0.9)',
+    'rgba(135, 206, 250, 0.5)'
+  );
 
-  const chartPerCase = new Chart(testingSkeleton['ctx'][3], {
-    type: 'bar',
-    data: {
-      labels: data_per_case['labels'],
-      datasets: [
-        {
-          label: 'Tests',
-          data: data_per_case['data'],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Number of Tests per each case',
-        },
-        legend: {
-          display: false,
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Tests',
-          },
-        },
-      },
-      datasets: {
-        bar: {
-          borderColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(98, 175, 68, 0.9)';
-            else {
-              return value >= context.dataset.data[index - 1]
-                ? 'rgba(98, 175, 68, 0.9)'
-                : 'rgba(171, 5, 1, 0.9)';
-            }
-          },
-          backgroundColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(81, 233, 0, 0.8)';
-            else {
-              return value >= context.dataset.data[index - 1]
-                ? 'rgba(81, 233, 0, 0.8)'
-                : 'rgba(247, 0, 0, 0.8)';
-            }
-          },
-        },
-      },
-    },
-  });
+  createRedGreenChart(
+    data_per_case['labels'],
+    'Tests',
+    data_per_case['data'],
+    testingSkeleton['ctx'][3],
+    'Number of Tests per each case',
+    'Date',
+    'Tests',
+    true
+  );
 
   testingSkeleton['div'].forEach((div) => {
     chartsWrapper.appendChild(div);
@@ -475,132 +431,29 @@ async function getConfirmedData(countryCode) {
     }
   });
 
-  const newChart = new Chart(confirmedSkeleton['ctx'][0], {
-    type: 'bar',
-    data: {
-      labels: new_casesData['labels'],
-      datasets: [
-        {
-          label: 'New Cases',
-          data: new_casesData['data'],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'New confirmed cases',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-        legend: {
-          display: false,
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Confirmed Cases',
-          },
-        },
-      },
-      datasets: {
-        bar: {
-          borderColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(171, 5, 1, 0.9)';
-            else {
-              return value < context.dataset.data[index - 1]
-                ? 'rgba(98, 175, 68, 0.9)'
-                : 'rgba(171, 5, 1, 0.9)';
-            }
-          },
-          backgroundColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(247, 0, 0, 0.8)';
-            else {
-              return value < context.dataset.data[index - 1]
-                ? 'rgba(81, 233, 0, 0.8)'
-                : 'rgba(247, 0, 0, 0.8)';
-            }
-          },
-        },
-      },
-    },
-  });
+  createRedGreenChart(
+    new_casesData['labels'],
+    'New Cases',
+    new_casesData['data'],
+    confirmedSkeleton['ctx'][0],
+    'New confirmed cases',
+    'Date',
+    'Confirmed Cases',
+    false
+  );
 
-  const totalChart = new Chart(confirmedSkeleton['ctx'][1], {
-    type: 'line',
-    data: {
-      labels: total_casesData['labels'],
-      datasets: [
-        {
-          label: 'Total confirmed cases',
-          data: total_casesData['data'],
-          borderColor: 'rgba(171, 5, 1, 0.9)',
-          backgroundColor: 'rgba(247, 0, 0, 0.8)',
-          fill: {
-            target: 'origin',
-            above: 'rgba(247, 0, 0, 0.5)',
-          },
-          cubicInterpolationMode: 'monotone',
-          pointRadius: 2,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Cumulative Total Cases',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Total cases',
-          },
-        },
-      },
-    },
-  });
+  createCumulativeChart(
+    total_casesData['labels'],
+    'Total confirmed cases',
+    total_casesData['data'],
+    confirmedSkeleton['ctx'][1],
+    'Cumulative Total Cases',
+    'Date',
+    'Total cases',
+    'rgba(247, 0, 0, 0.8)',
+    'rgba(171, 5, 1, 0.9)',
+    'rgba(247, 0, 0, 0.5)'
+  );
 
   confirmedSkeleton['div'].forEach((div) => {
     chartsWrapper.appendChild(div);
@@ -677,8 +530,6 @@ async function getVaccinationsData(countryCode) {
     }
   });
 
-  console.log(vaccineData);
-
   const chartTotal = new Chart(vaccineSkeleton['ctx'][0], {
     type: 'line',
     data: {
@@ -750,78 +601,16 @@ async function getVaccinationsData(countryCode) {
     },
   });
 
-  const chartDaily = new Chart(vaccineSkeleton['ctx'][1], {
-    type: 'bar',
-    data: {
-      labels: dailyData['labels'],
-      datasets: [
-        {
-          label: 'Daily Vaccinations',
-          data: dailyData['data'],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Daily Vaccinations(7-day smoothed)',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-        legend: {
-          display: false,
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Vaccinations',
-          },
-        },
-      },
-      datasets: {
-        bar: {
-          borderColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(98, 175, 68, 0.9)';
-            else {
-              return value >= context.dataset.data[index - 1]
-                ? 'rgba(98, 175, 68, 0.9)'
-                : 'rgba(171, 5, 1, 0.9)';
-            }
-          },
-          backgroundColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(81, 233, 0, 0.8)';
-            else {
-              return value >= context.dataset.data[index - 1]
-                ? 'rgba(81, 233, 0, 0.8)'
-                : 'rgba(247, 0, 0, 0.8)';
-            }
-          },
-        },
-      },
-    },
-  });
+  createRedGreenChart(
+    dailyData['labels'],
+    'Daily Vaccinations',
+    dailyData['data'],
+    vaccineSkeleton['ctx'][1],
+    'Daily Vaccinations(7-day smoothed)',
+    'Date',
+    'Vaccinations',
+    true
+  );
 
   const vaccineTypes = locationData['vaccines'].split(', ');
   const vaccinesDiv = document.createElement('div');
@@ -882,132 +671,29 @@ async function getMortalityData(countryCode) {
     }
   });
 
-  const newChart = new Chart(mortalitySkeleton['ctx'][0], {
-    type: 'bar',
-    data: {
-      labels: new_deathsData['labels'],
-      datasets: [
-        {
-          label: 'New deaths',
-          data: new_deathsData['data'],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'New registered deaths attributed to Covid-19(7-day smoothed)',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-        legend: {
-          display: false,
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Deaths',
-          },
-        },
-      },
-      datasets: {
-        bar: {
-          borderColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(171, 5, 1, 0.9)';
-            else {
-              return value < context.dataset.data[index - 1]
-                ? 'rgba(98, 175, 68, 0.9)'
-                : 'rgba(171, 5, 1, 0.9)';
-            }
-          },
-          backgroundColor: (context) => {
-            var index = context.dataIndex;
-            var value = context.dataset.data[index];
-            if (index === 0) return 'rgba(247, 0, 0, 0.8)';
-            else {
-              return value < context.dataset.data[index - 1]
-                ? 'rgba(81, 233, 0, 0.8)'
-                : 'rgba(247, 0, 0, 0.8)';
-            }
-          },
-        },
-      },
-    },
-  });
+  createRedGreenChart(
+    new_deathsData['labels'],
+    'New deaths',
+    new_deathsData['data'],
+    mortalitySkeleton['ctx'][0],
+    'New registered deaths attributed to Covid-19(7-day smoothed)',
+    'Date',
+    'Deaths',
+    false
+  );
 
-  const totalChart = new Chart(mortalitySkeleton['ctx'][1], {
-    type: 'line',
-    data: {
-      labels: total_deathsData['labels'],
-      datasets: [
-        {
-          label: 'Total deaths',
-          data: total_deathsData['data'],
-          borderColor: 'rgba(171, 12, 12, 0.9)',
-          backgroundColor: 'rgba(25, 25, 25, 0.8)',
-          fill: {
-            target: 'origin',
-            above: 'rgba(25, 25, 25, 0.5)',
-          },
-          cubicInterpolationMode: 'monotone',
-          pointRadius: 2,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Cumulative Total Deaths attributed to Covid-19',
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb',
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
-      },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Date',
-          },
-        },
-        y: {
-          display: true,
-          title: {
-            display: true,
-            text: 'Total deaths',
-          },
-        },
-      },
-    },
-  });
+  createCumulativeChart(
+    total_deathsData['labels'],
+    'Total deaths',
+    total_deathsData['data'],
+    mortalitySkeleton['ctx'][1],
+    'Cumulative Total Deaths attributed to Covid-19',
+    'Date',
+    'Total deaths',
+    'rgba(25, 25, 25, 0.8)',
+    'rgba(171, 12, 12, 0.9)',
+    'rgba(25, 25, 25, 0.5)'
+  );
 
   mortalitySkeleton['div'].forEach((div) => {
     chartsWrapper.appendChild(div);
