@@ -51,6 +51,7 @@ a {
   grid-gap: 5px;
   gap: 5px;
   height: 120vh;
+  overflow-x: hidden;
 }
 
 .main-header {
